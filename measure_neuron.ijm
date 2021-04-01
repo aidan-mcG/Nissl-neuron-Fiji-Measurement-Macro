@@ -8,6 +8,11 @@ neuronChannel = getNumber("Input the channel number for your neuronal stain", 1)
 quantChannel = getNumber("Input the channel number for the protein to be asessed", 2);
 selector1 = "_c" + neuronChannel + ".tif";
 selector2 = "_c" + quantChannel + ".tif";
+types = newArray("MFI", "Puncta")
+Dialog.create("MFI or puncta?");  
+Dialog.addChoice("Type:", types);
+Dialog.show();
+type = Dialog.getChoice();
 //loop through only these files
 for(i=0;i<alltif.length;i++){
 	if(indexOf(alltif[i], selector1)>=1) {
@@ -46,6 +51,12 @@ for(i=0;i<alltif.length;i++){
 		selectImage(orig);
 		close();
 		selectImage(copy);
+		if(type == "Puncta"){
+			//run("Gaussian Blur...", "sigma=1");
+			setAutoThreshold("Moments");
+			setOption("BlackBackground", true);
+			run("Convert to Mask");
+			}
 		saveAs("Tiff", dir2 + "intermediate" + fn);
 		selectImage(copy);
 		close();
@@ -56,7 +67,7 @@ for(i=0;i<allmid.length;i++){
 	if(indexOf(allmid[i], selector1)>=1) {
 		open(dir2 + allmid[i]);
 		tmid = getTitle();
-		print("converting" + title);
+		print("converting image" + i);
 		mid = getImageID();
 		selectImage(mid);
 		run("Duplicate...", "title=" +i +"c" +neuronChannel+ "weka");
@@ -68,7 +79,7 @@ for(i=0;i<allmid.length;i++){
 		run("Trainable Weka Segmentation");
 		selectWindow("Trainable Weka Segmentation v3.2.34");
 		wait(5000);
-		call("trainableSegmentation.Weka_Segmentation.loadClassifier", "C:\\Users\\Aidan\\Desktop\\Fiji_proj\\classifier.model");
+		call("trainableSegmentation.Weka_Segmentation.loadClassifier", "C:\\Users\\Aidan\\Desktop\\Neuron Measurer\\classifier.model");
 		wait(5000);
 		call("trainableSegmentation.Weka_Segmentation.getResult");
 		wait(10000);
@@ -90,8 +101,13 @@ for(i=0;i<allmid.length;i++){
 			roiManager("Combine");
 			roiManager("Measure");
 			selectWindow("Results");
-			Table.save(outputDir + titleq + "outlines.csv");
-     	}
+			if(type == "Puncta"){
+				Table.save(outputDir + titleq + "_thresh.csv");
+     		}
+     		if(type == "MFA"){
+				Table.save(outputDir + titleq + "_mfa.csv");
+     		}
+		}
      close("*");
      close("Results");
 	}
